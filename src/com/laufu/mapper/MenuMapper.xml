@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="com.laufu.mapper.MenuMapper">
+
+     <resultMap type="menu" id="menuResultMap">  
+        <id property="id" column="id"/>  
+        <result property="menuName" column="menuName"/>  
+        <result property="url" column="url"/>  
+        <result property="role" column="role"/>  
+        <result property="parentId" column="parentId"/>  
+    </resultMap>
+	
+     <select id="getAllMenus" resultType="list"  resultMap="menuResultMap">
+        <![CDATA[
+            SELECT * FROM menu 
+        ]]>
+    </select>
+    
+    <select id="getMenuByParent" resultType="list" resultMap="menuResultMap">
+        <![CDATA[
+            select * from user where parentId=#{id}
+        ]]>
+    </select>
+       <!-- 检测菜单名称是否相同 -->
+    <select id="getMenuByName" parameterType="String"  resultType="menu" resultMap="menuResultMap">
+        <![CDATA[
+            select * from menu where menuName=#{menuName}
+        ]]>
+    </select>
+
+    <insert id="addMenu" useGeneratedKeys="true" keyProperty="id" parameterType="menu">
+      INSERT INTO  menu(menuName, url ,parentId) 
+      values(
+       #{menuName}, #{url}, #{parentId}
+      )
+    </insert>
+
+    <update id="updateMenu" parameterType="menu">
+      UPDATE  menu SET 
+      menuName = #{menuName},
+      url = #{url},
+      parentId = #{parentId},
+      WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteMenu" parameterType="int">
+        delete from menu where id = #{id}
+    </delete>
+    
+</mapper>
+

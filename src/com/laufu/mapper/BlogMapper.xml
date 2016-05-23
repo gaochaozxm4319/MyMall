@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="com.laufu.mapper.BlogMapper">
+
+     <resultMap type="blog" id="blogResultMap">  
+        <id property="id" column="id"/>  
+        <result property="title" column="title"/>  
+        <result property="contextUrl" column="context_url"/>
+        <result property="context" column="context"/>
+        <result property="imgUrl" column="img_url"/>
+        <result property="context" column="context"/>
+        <result property="createDate" column="create_time"/>
+        <result property="lastModify" column="last_modify"/>  
+        <result property="auther" column="auther"/>  
+         <result property="userId" column="user_id"/>
+         <result property="category" column="category"/>
+         <result property="roles" column="roles"/>
+    </resultMap>
+    
+     <select id="getCount" resultType="int" >
+        <![CDATA[
+            SELECT COUNT(id) FROM blog 
+        ]]>
+    </select>
+    
+    <select id="getAllBlog" resultType="list" resultMap="blogResultMap">
+        <![CDATA[
+            select * from blog
+        ]]>
+    </select>
+       
+    <select id="getListBlog" parameterType="map"  resultType="list" resultMap="blogResultMap">
+        <![CDATA[
+            select * from blog ORDER BY id desc   limit #{start}, #{max}
+        ]]>
+    </select>
+  
+    <select id="selectBlogById" parameterType="int" resultType="blog">
+        <![CDATA[
+            select * from blog where id = #{id}
+        ]]>
+    </select>
+    
+      <select id="getBlogByName" parameterType="string" resultType="blog">
+        <![CDATA[
+            select * from blog where title = #{name}
+        ]]>
+    </select>
+
+    <insert id="insertBlog"  useGeneratedKeys="true" keyProperty="id" parameterType="blog">
+      INSERT INTO  blog(title, context_url,img_url,context, create_time,last_modify,auther,user_id,category,roles) 
+      values(
+      #{title}, #{contextUrl}, #{imgUrl},#{context}, #{createDate}, #{lastModify}, #{auther},#{userId},#{category},#{roles},#{describe}
+      )
+    </insert>
+
+    <update id="updateBlog" parameterType="blog">
+      
+      UPDATE blog SET  
+      title=#{title}, 
+      context_url=#{contextUrl}
+      ,img_url=  #{imgUrl},
+      context= #{context},
+       create_time= #{createDate},
+       last_modify= #{lastModify},
+       auther=#{auther},
+       user_id= #{userId},
+       category= #{category},
+       roles=#{roles}
+      WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteBlog" parameterType="int">
+        delete from blog where id = #{id}
+    </delete>
+    
+</mapper>
+

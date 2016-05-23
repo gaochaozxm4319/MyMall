@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+    http://www.springframework.org/schema/aop 
+    http://www.springframework.org/schema/aop/spring-aop-3.0.xsd 
+    http://www.springframework.org/schema/tx  
+    http://www.springframework.org/schema/tx/spring-tx-3.0.xsd 
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	<!-- 注解探测器 ， 在JUnit测试的时候需要-->
+	<context:component-scan base-package="com.laufu" />
+	<!-- JDBC参数配置 -->
+	<bean
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="locations">
+			<list>
+				<value>classpath:jdbc.properties</value>
+			</list>
+		</property>
+	</bean>
+	<!-- 数据源配置 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<!-- 设置JDBC驱动名称 -->
+		<property name="driverClass" value="${jdbc.driver}"></property>
+		<!-- 设置JDBC连接URL -->
+		<property name="jdbcUrl" value="${jdbc.url}"></property>
+		<!-- 设置数据库用户名 -->
+		<property name="user" value="${jdbc.username}"></property>
+		<!-- 设置数据库密码 -->
+		<property name="password" value="${jdbc.password}"></property>
+		<!-- <property name="checkoutTimeout" value="${cpool.checkoutTimeout}" /> -->
+		<!--初始化时获取的连接数，取值应在minPoolSize与maxPoolSize之间。Default: 3 -->
+		<property name="initialPoolSize" value="${cpool.minPoolSize}" />
+		<property name="minPoolSize" value="${cpool.minPoolSize}" />
+		<property name="maxPoolSize" value="${cpool.maxPoolSize}" />
+		
+		<!--每60秒检查所有连接池中的空闲连接。Default: 0 -->
+		<property name="idleConnectionTestPeriod">
+			<value>60</value>
+		</property>
+		
+		<!--定义在从数据库获取新连接失败后重复尝试的次数。Default: 30 -->
+		<property name="acquireRetryAttempts">
+			<value>30</value>
+		</property>
+		
+		<!--获取连接失败将会引起所有等待连接池来获取连接的线程抛出异常。但是数据源仍有效
+		保留，并在下次调用getConnection()的时候继续尝试获取连接。如果设为true，那么在尝试
+		获取连接失败后该数据源将申明已断开并永久关闭。Default: false-->
+		<property name="breakAfterAcquireFailure">
+			<value>true</value>
+		</property>
+		
+		<!--因性能消耗大请只在需要的时候使用它。如果设为true那么在每个connection提交的
+		时候都将校验其有效性。建议使用idleConnectionTestPeriod或automaticTestTable
+		等方法来提升连接测试的性能。Default: false -->
+		<property name="testConnectionOnCheckout">
+			<value>false</value>
+		</property>
+		
+		<!-- 最大空闲时间，如果相应时间未进行操作则自动丢弃链接，单位（秒） -->
+		<property name="maxIdleTime" value="${cpool.maxIdleTime}" />
+		<property name="acquireIncrement" value="${cpool.acquireIncrement}" />
+		<property name="maxIdleTimeExcessConnections" value="${cpool.maxIdleTimeExcessConnections}" />
+		<!--JDBC的标准参数，用以控制数据源内加载的PreparedStatements数量。但由于预缓存的statements
+		       属于单个connection而不是整个连接池。所以设置这个参数需要考虑到多方面的因素。
+		       如果maxStatements与maxStatementsPerConnection均为0，则缓存被关闭。Default: 0-->
+		 <property name="maxStatements" value="0"/>
+		 <!--连接池用完时客户调用getConnection()后等待获取连接的时间，单位：毫秒。超时后会抛出-->
+		 <!--SQLEXCEPTION，如果设置0，则无限等待。Default:0-->
+		 <property name="checkoutTimeout" value="100"/>
+	</bean>
+
+	<!-- 配置SqlSessionFactoryBean -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation" value="classpath:mybatis-config.xml" />
+	</bean>
+
+
+	<!-- 单独配置一个Mapper； 这种模式就是得给每个mapper接口配置一个bean -->
+	<!--
+		<bean id="UserMapper"
+		class="org.mybatis.spring.mapper.MapperFactoryBean"> <property
+		name="mapperInterface" value="com.laufu.mapper.UserMapper" />
+		<property name="sqlSessionFactory" ref="sqlSessionFactory" /> </bean>
+	-->
+
+	<!--
+		通过扫描的模式，扫描目录在com/laufu/mapper目录，
+		这样一个bean就可以了
+	-->
+
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.laufu.mapper" />
+	</bean>
+	<!--
+		上面的配置最先配置的是DataSource，这里采用的是jdbc的DataSource；
+		然后是SqlSessionFactoryBean，这个配置比较关键。SqlSessionFactoryBean
+		需要注入DataSource数据源，其次还要设置configLocation也就是mybatis的xml
+		配置文件路径，完成一些关于mybatis的配置，如settings、mappers、plugin等；
+		如果使用mapperCannerConfigurer模式，需要设置扫描根路径也就是你的mybatis
+		的mapper接口所在包路径；凡是markerInterface这个接口的子接口都参与到这个
+		扫描，也就是说所有的mapper接口继承这个SqlMapper。 如果你不使用自己的transaction事务，
+		就使用MapperScannerConfigurer来完成SqlSession的打开、关闭和事务的回滚操作。
+		在此期间，出现数据库操作的如何异常都会被转换成DataAccessException，
+		这个异常是一个抽象的类，继承RuntimeException；
+	-->
+
+	<!--
+		配置事务管理器，注意这里的dataSource和SqlSessionFactoryBean的dataSource要一致，不然事务就没有作用了
+	-->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<!-- 配置事务的传播特性【userTxAdvice】：详见下方AOP配置 -->
+	<tx:advice id="userTxAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="delete*" propagation="REQUIRED" read-only="false"
+				rollback-for="java.lang.Exception" no-rollback-for="java.lang.RuntimeException" />
+			<tx:method name="insert*" propagation="REQUIRED" read-only="false"
+				rollback-for="java.lang.RuntimeException" />
+			<tx:method name="save*" propagation="REQUIRED" read-only="false"
+				rollback-for="java.lang.RuntimeException" />
+			<tx:method name="update*" propagation="REQUIRED" read-only="false"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="find*" propagation="SUPPORTS" />
+			<tx:method name="get*" propagation="SUPPORTS" />
+			<tx:method name="select*" propagation="SUPPORTS" />
+		</tx:attributes>
+	</tx:advice>
+
+
+	<aop:config>
+		<aop:pointcut id="pc"
+			expression="execution(public * com.laufu.service.*.*(..))" />
+			 <!--把事务控制在Service层-->
+		<aop:advisor pointcut-ref="pc" advice-ref="userTxAdvice" />
+	</aop:config>
+	
+
+	<!-- 启用事务 -->
+
+
+	<!-- AOP代理设置 -->
+ 	<aop:aspectj-autoproxy  proxy-target-class="true" />
+
+
+	<!-- 激活annotation功能 -->
+	<context:annotation-config />
+	<context:spring-configured />
+	<!-- 国际化配置 -->
+	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+	        <property name="basename">
+	            <value>messages</value>
+	        </property>
+	</bean>
+
+</beans>
+
+        
